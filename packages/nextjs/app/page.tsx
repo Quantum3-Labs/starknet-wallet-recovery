@@ -1,75 +1,45 @@
 "use client";
 
-import Link from "next/link";
 import type { NextPage } from "next";
-import { BugAntIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
-import { Address } from "~~/components/scaffold-stark";
 import { useAccount } from "@starknet-react/core";
-import { Address as AddressType } from "@starknet-react/chains";
+import Image from "next/image";
+import { Button } from "@radix-ui/themes";
+import { BlockieAvatar } from "~~/components/scaffold-stark";
+import Link from "next/link";
 
 const Home: NextPage = () => {
-  const connectedAddress = useAccount();
+  const { address, status, chainId, ...props } = useAccount();
+
   return (
     <>
-      <div className="flex items-center flex-col flex-grow pt-10">
-        <div className="px-5">
-          <h1 className="text-center">
-            <span className="block text-2xl mb-2">Welcome to</span>
-            <span className="block text-4xl font-bold">Scaffold-Stark 2</span>
-          </h1>
-          <div className="flex justify-center items-center space-x-2">
-            <p className="my-2 font-medium">Connected Address:</p>
-            <Address address={connectedAddress.address as AddressType} />
-          </div>
-          <p className="text-center text-lg">
-            Get started by editing{" "}
-            <code className="italic bg-base-300 text-base font-bold max-w-full break-words break-all inline-block">
-              packages/nextjs/app/page.tsx
-            </code>
-          </p>
-          <p className="text-center text-lg">
-            Edit your smart contract{" "}
-            <code className="italic bg-base-300 text-base font-bold max-w-full break-words break-all inline-block">
-              YourContract.cairo
-            </code>{" "}
-            in{" "}
-            <code className="italic bg-base-300 text-base font-bold max-w-full break-words break-all inline-block">
-              packages/snfoundry/contracts/src
-            </code>
-          </p>
-        </div>
+      <div className="background-page">
+        <div className="flex justify-center items-center w-full py-40">
+          <div className="max-w-[1920px] w-full flex justify-center items-center flex-col gap-10">
+            <div className="text-center text-4xl font-bold flex flex-col gap-2">
+              <span>Welcome To</span>
+              <h1 className="text-gradient">Starknet Wallet Recovery</h1>
+            </div>
+            <Image src="/logo.svg" alt="logo" width={73} height={65} />
+            <div className="flex flex-col items-center">
+              <span>Let&apos;s search what assets we can recover</span>
+              <span>Enter your hacked address below:</span>
+            </div>
 
-        <div className="flex-grow bg-base-300 w-full mt-16 px-8 py-12">
-          <div className="flex justify-center items-center gap-12 flex-col sm:flex-row">
-            <div className="flex flex-col bg-base-100 px-10 py-10 text-center items-center max-w-xs rounded-3xl">
-              <BugAntIcon className="h-8 w-8 fill-secondary" />
-              <p>
-                Tinker with your smart contract using the{" "}
-                <Link href="/debug" passHref className="link">
-                  Debug Contracts
-                </Link>{" "}
-                tab.
-              </p>
+            <div className="bg-[#E8E8F7] p-4 rounded-md flex gap-2">
+              <span>{address}</span>
+              <span>
+                {address && <BlockieAvatar address={address} size={24} />}
+              </span>
             </div>
-            <div className="flex flex-col bg-base-100 px-10 py-10 text-center items-center max-w-xs rounded-3xl">
-              <MagnifyingGlassIcon className="h-8 w-8 fill-secondary" />
-              <p>
-                Explore your local transactions with the{" "}
-                <Link href="/blockexplorer" passHref className="link">
-                  Block Explorer
-                </Link>{" "}
-                tab.
-              </p>
-            </div>
+            <Link
+              href="/discover"
+              className="border-2 rounded-full px-20 py-3 border-black"
+            >
+              Discover
+            </Link>
           </div>
         </div>
-        {/* <div
-          onClick={() => {
-            writeAsync();
-          }}
-        >
-          TEST TX
-        </div> */}
+        <div></div>
       </div>
     </>
   );
