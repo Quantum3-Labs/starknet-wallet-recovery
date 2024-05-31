@@ -23,7 +23,7 @@ type AddressProps = {
   size?: "xs" | "sm" | "base" | "lg" | "xl" | "2xl" | "3xl";
 };
 
-const blockieSizeMap = {
+export const blockieSizeMap = {
   xs: 6,
   sm: 7,
   base: 8,
