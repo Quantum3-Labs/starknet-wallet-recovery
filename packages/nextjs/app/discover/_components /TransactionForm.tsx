@@ -1,7 +1,6 @@
 import React from "react";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { Button } from "@radix-ui/themes";
-import Link from "next/link";
 
 interface TransactionFormProps {
   address: string;
