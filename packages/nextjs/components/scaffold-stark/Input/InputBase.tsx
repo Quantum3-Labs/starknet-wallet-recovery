@@ -60,7 +60,7 @@ export const InputBase = <
 
   return (
     <div
-      className={`flex border-2 border-base-300 bg-base-200 rounded-full text-accent ${modifier}`}
+      className={`flex border-2 border-base-300 bg-base-200 rounded-full text-accent w-full ${modifier}`}
     >
       {prefix}
       <input

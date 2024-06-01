@@ -34,6 +34,7 @@ p {
     background-image:
             linear-gradient(180deg, rgba(0,0,0,0) 15%, rgba(249,248,249,1) 100%),
             url("/Vector.png");
+    height: calc(100vh - 76px) ;
 }
 
 
