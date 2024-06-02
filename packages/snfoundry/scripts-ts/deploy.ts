@@ -3,9 +3,35 @@ import { deployContract, deployer, exportDeployments } from "./deploy-contract";
 const deployScript = async (): Promise<void> => {
   await deployContract(
     {
-      owner: deployer.address, // the deployer address is the owner of the contract
+      name: "DAI",
+      symbol: "DAI",
+      initial_supply: 1000000000000000000000000n,
+      recipient: deployer.address,
     },
-    "YourContract"
+    "MockToken",
+    "DAI"
+  );
+
+  await deployContract(
+    {
+      name: "USDT",
+      symbol: "USDT",
+      initial_supply: 1000000000000000000000000n,
+      recipient: deployer.address,
+    },
+    "MockToken",
+    "USDT"
+  );
+
+  await deployContract(
+    {
+      name: "STRK",
+      symbol: "STRK",
+      initial_supply: 1000000000000000000000000n,
+      recipient: deployer.address,
+    },
+    "MockToken",
+    "STRK"
   );
 };
 
