@@ -1,32 +1,37 @@
-export const checkboxes = [
+export interface Token {
+  name: string;
+  symbol: string;
+  logo: string;
+  address: string;
+}
+
+export const tokens: Token[] = [
   {
-    id: 1,
-    logoSrc: "/logo-starknet.svg",
+    name: "Starknet Token",
     symbol: "STRK",
-    value: "83.99076",
+    logo: "/logo-starknet.svg",
+    address:
+      "0x04c1C8D2Aaad4654E887D152b3435Dfae1BF8f9a5aE4d9C2fE53C8A305426882",
   },
   {
-    id: 2,
-    logoSrc: "/logo-uni.svg",
-    symbol: "UNI",
-    value: "83.99076",
-  },
-  {
-    id: 2,
-    logoSrc: "/logo-usdc.svg",
-    symbol: "USDC",
-    value: "70.00",
-  },
-  {
-    id: 2,
-    logoSrc: "/logo-usdt.svg",
+    name: "Tether USD",
     symbol: "USDT",
-    value: "70.00",
+    logo: "/logo-usdt.svg",
+    address:
+      "0x07aF54fEdA49BC141A82b376Dc57450645122b0a716a32FB40B1F454bfa34E8C",
   },
   {
-    id: 2,
-    logoSrc: "/logo-dai.svg",
+    name: "Ether",
+    symbol: "ETH",
+    logo: "/ether.png",
+    address:
+      "0x049D36570D4e46f48e99674bd3fcc84644DdD6b96F7C741B1562B82f9e004dC7",
+  },
+  {
+    name: "Dai Stablecoin",
     symbol: "DAI",
-    value: "70.00",
+    logo: "/logo-dai.svg",
+    address:
+      "0x0626281391726B5e53Af40193e034e60Fb49E44A10b3d23853feFF3391387D69",
   },
 ];

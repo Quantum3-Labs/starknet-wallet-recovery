@@ -1,50 +1,74 @@
 "use client";
 
 import type { NextPage } from "next";
-import { useAccount } from "@starknet-react/core";
+import { useAccount, useBalance } from "@starknet-react/core";
 import {
   ArrowLeftIcon,
   DocumentDuplicateIcon,
 } from "@heroicons/react/24/outline";
-import { checkboxes } from "~~/data/data";
+import { Token, tokens } from "~~/data/data";
 import { Button } from "@radix-ui/themes";
-import React, { useEffect, useState } from "react";
+import React, { FormEvent, FormEventHandler, useEffect, useState } from "react";
 import GenericModal from "~~/components/scaffold-stark/CustomConnectButton/GenericModal";
 import { useLocalStorage } from "usehooks-ts";
 import TransactionForm from "~~/app/discover/_components /TransactionForm";
 import CustomCheckbox from "~~/app/discover/_components /CustomCheckbox";
 import StepIndicator from "~~/app/discover/_components /StepIndicator";
 import Image from "next/image";
-import { Address, BlockieAvatar } from "~~/components/scaffold-stark";
-import { ADDRESS } from "starknet-dev";
+import {
+  Address as AddressUI,
+  Balance,
+  BlockieAvatar,
+} from "~~/components/scaffold-stark";
+import { Address } from "@starknet-react/chains";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import Link from "next/link";
+import { Form, Formik, useFormik } from "formik";
+import { ADDRESS } from "starknet";
+import { useScaffoldMultiWriteContract } from "~~/hooks/scaffold-stark/useScaffoldMultiWriteContract";
+import { useScaffoldWriteContract } from "~~/hooks/scaffold-stark/useScaffoldWriteContract";
 
 const Discover: NextPage = () => {
-  const [address, setAddress] = useState<string | null>(null);
   const { address: accountAddress, status, chainId, ...props } = useAccount();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [inputValues, setInputValues] = useState(["Value 1", "Value 2"]);
   const [formType, setFormType] = useState("erc20");
-  const [hackedAddress, setHackedAddress] = useLocalStorage<string>(
-    "hackedAddress",
-    "",
-  );
   const [isERC20Selected, setIsERC20Selected] = useState(true);
   const [step, setStep] = useState(1);
   const [modalContent, setModalContent] = useState("addAssets");
   const [copied, setCopied] = useState(false);
-  const [isCheckboxSelected, setIsCheckboxSelected] = useState(false);
   const [ensAvatar, setEnsAvatar] = useState<string | null>();
+  const [transactions, setTransactions] = useState<Token[]>([]);
+
+  const { writeAsync: tokensTransfer } = useScaffoldMultiWriteContract({
+    calls: [
+      {
+        contractName: "Eth",
+        functionName: "transfer",
+        args: [accountAddress, 5 * 10 ** 17],
+      },
+    ],
+  });
+  const onSubmit = (values: any) => {
+    const currentTransaction = tokens.filter(({ symbol }: Token) =>
+      values.transactions.includes(symbol),
+    );
+    setTransactions(currentTransaction);
+    setStep(2);
+  };
+
+  const formik = useFormik({
+    initialValues: {
+      transactions: [],
+    },
+    onSubmit,
+  });
 
   const handleCopy = () => {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleContinueClick = () => {
-    setStep((prevStep) => prevStep + 1);
-  };
   const handleAdd = () => {
     setStep(2);
     setIsModalOpen(false);
@@ -63,26 +87,17 @@ const Discover: NextPage = () => {
     setModalContent("addAssets");
     setIsModalOpen(true);
   };
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     setModalContent("empty");
+    try {
+      await tokensTransfer();
+    } catch (error) {
+      console.error("Error transferring tokens:", error);
+    }
   };
   const handleBackClick = () => {
     setStep(1);
   };
-  const handleCheckboxChange = (isChecked: boolean) => {
-    setIsCheckboxSelected(isChecked);
-  };
-  useEffect(() => {
-    const queryAddress = new URLSearchParams(window.location.search).get(
-      "address",
-    );
-    if (queryAddress) {
-      setHackedAddress(queryAddress);
-      setAddress(queryAddress);
-    } else {
-      setAddress(accountAddress as string);
-    }
-  }, []);
 
   return (
     <>
@@ -94,62 +109,81 @@ const Discover: NextPage = () => {
               <div className="py-10 bg-[#E8E8F7] rounded-xl max-w-[473px] w-full flex flex-col justify-center items-center gap-4">
                 <span>Hacked address</span>
                 <div className="flex gap-3">
-                  <Address address={address as ADDRESS} />
+                  <AddressUI address={accountAddress as ADDRESS} />
                 </div>
               </div>
             </div>
             <div className="flex-1 px-10 flex gap-10 flex-col justify-center">
               {step === 1 && (
-                <>
-                  <div className="flex justify-center items-center gap-5 text-3xl w-full">
-                    <div className="flex max-w-[880px] w-full justify-start gap-3">
-                      <Link href={"/"}>
-                        <ArrowLeftIcon className="w-8" />
-                      </Link>
-                      <span>Select your assets</span>
+                <form onSubmit={formik.handleSubmit}>
+                  <>
+                    <div className="flex justify-center items-center gap-5 text-3xl w-full">
+                      <div className="flex max-w-[880px] w-full justify-start gap-3">
+                        <Link href={"/"}>
+                          <ArrowLeftIcon className="w-8" />
+                        </Link>
+                        <span>Select your assets</span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex flex-col gap-10 w-full justify-center items-center">
-                    {checkboxes.map((checkbox) => (
-                      <CustomCheckbox
-                        key={checkbox.id}
-                        logoSrc={checkbox.logoSrc}
-                        symbol={checkbox.symbol}
-                        value={checkbox.value}
-                        onChange={handleCheckboxChange}
-                      />
-                    ))}
-                  </div>
-                  <div className="flex items-center justify-center gap-10 py-10">
-                    <Button
-                      className="py-4 px-14 rounded-full border-black border-2"
-                      onClick={handleAddManuallyClick}
-                    >
-                      Add Manually
-                    </Button>
-                    <Button
-                      className={`bg-button-secondary py-4 px-20 text-white rounded-full ${
-                        isCheckboxSelected
-                          ? ""
-                          : "pointer-events-none opacity-50"
-                      }`}
-                      onClick={handleContinueClick}
-                      disabled={!isCheckboxSelected}
-                    >
-                      Continue
-                    </Button>
-                  </div>
-                </>
+                    <div className="flex flex-col gap-10 w-full justify-center items-center">
+                      {tokens.map((token) => {
+                        return (
+                          <CustomCheckbox
+                            label={
+                              <div className="flex items-start justify-start gap-4">
+                                <div className="flex items-center gap-1">
+                                  <img
+                                    src={token.logo}
+                                    alt={token.symbol}
+                                    className="w-8 h-8 rounded-full"
+                                  />
+                                </div>
+                                <div className="flex flex-col gap-2 justify-center">
+                                  <span>{token.symbol}</span>
+                                  <Balance address={token.address as Address} />
+                                </div>
+                              </div>
+                            }
+                            onChange={formik.handleChange}
+                            key={token.address}
+                            value={token.symbol}
+                            name="transactions"
+                          />
+                        );
+                      })}
+                    </div>
+                    <div className="flex items-center justify-center gap-10 py-10">
+                      <Button
+                        className="py-4 px-14 rounded-full border-black border-2"
+                        onClick={handleAddManuallyClick}
+                      >
+                        Add Manually
+                      </Button>
+                      <Button
+                        className={`bg-button-secondary py-4 px-20 text-white rounded-full ${
+                          formik.values.transactions.length
+                            ? ""
+                            : "pointer-events-none opacity-50"
+                        }`}
+                        disabled={!formik.values.transactions.length}
+                        type="submit"
+                      >
+                        Continue
+                      </Button>
+                    </div>
+                  </>
+                </form>
               )}
+
               {step === 2 && (
                 <TransactionForm
-                  address={address as string}
-                  inputValues={inputValues}
-                  onClearAll={handleClearAll}
+                  transactions={transactions}
+                  address={accountAddress as string}
                   onStartSigning={handleStartSigning}
                   onBackClick={handleBackClick}
                 />
               )}
+
               {step === 3 && (
                 <div>
                   <div className="flex justify-center items-center gap-5 text-3xl">
@@ -162,6 +196,7 @@ const Discover: NextPage = () => {
               )}
             </div>
           </div>
+
           {isModalOpen && (
             <GenericModal
               isOpen={isModalOpen}
@@ -264,11 +299,11 @@ const Discover: NextPage = () => {
                     <div className="w-full flex justify-center items-center flex-col pt-5 gap-5">
                       <div className="flex gap-2">
                         <BlockieAvatar
-                          address={address as ADDRESS}
+                          address={accountAddress as ADDRESS}
                           ensImage={ensAvatar}
                           size={24}
                         />
-                        <span>{address}</span>
+                        <span>{accountAddress}</span>
                       </div>
 
                       <Button
@@ -298,9 +333,9 @@ const Discover: NextPage = () => {
                     </div>
                     <div className="w-full flex justify-center items-center gap-5 flex-col">
                       <div className="flex gap-2 bg-[#E8E8F7] p-4 rounded-md">
-                        <span>{address as ADDRESS}</span>
+                        <span>{accountAddress as ADDRESS}</span>
                         <CopyToClipboard
-                          text={address as string}
+                          text={accountAddress as string}
                           onCopy={handleCopy}
                         >
                           <DocumentDuplicateIcon

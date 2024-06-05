@@ -1,11 +1,14 @@
-import React from "react";
+import React, { useState } from "react";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { Button } from "@radix-ui/themes";
+import { Token } from "~~/data/data";
+import { Balance } from "~~/components/scaffold-stark";
+import { Address } from "@starknet-react/chains";
 
 interface TransactionFormProps {
   address: string;
-  inputValues: string[];
-  onClearAll: () => void;
+  transactions: Token[];
+  inputValues?: string;
   onStartSigning: () => void;
   onBackClick: () => void;
 }
@@ -13,10 +16,23 @@ interface TransactionFormProps {
 const TransactionForm: React.FC<TransactionFormProps> = ({
   address,
   inputValues,
-  onClearAll,
   onStartSigning,
   onBackClick,
+  transactions,
 }) => {
+  const [currentTransactions, setCurrentTransactions] = useState(transactions);
+  const onRemove = (symbol: string) => {
+    const transactionFiltered = transactions.filter(
+      (transaction) => transaction.symbol !== symbol,
+    );
+
+    setCurrentTransactions(transactionFiltered);
+  };
+
+  const onClearAll = () => {
+    setCurrentTransactions([]);
+  };
+
   return (
     <div className="flex flex-col gap-5 justify-center items-center">
       <div className="flex justify-center items-center w-full gap-5 text-3xl">
@@ -35,15 +51,19 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
           </div>
 
           <div className="flex flex-col gap-3 justify-center w-full">
-            {inputValues.map((value, index) => (
-              <input
-                key={index}
-                type="text"
-                value={value}
-                className="bg-white rounded-md p-4 w-[880px]"
-                readOnly
-              />
-            ))}
+            {currentTransactions.map(({ symbol, address }) => {
+              return (
+                <div
+                  className="bg-white rounded-md p-4 w-[880px] border-2 flex justify-between"
+                  key={symbol}
+                >
+                  <div>
+                    <Balance address={address as Address} /> {symbol}
+                  </div>
+                  <button onClick={() => onRemove(symbol)}>x</button>
+                </div>
+              );
+            })}
           </div>
         </div>
         <div className="flex items-center justify-center gap-10 py-10">

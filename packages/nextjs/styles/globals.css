@@ -47,3 +47,12 @@ p {
     background: linear-gradient(86deg, rgba(146,81,134,1) 0%, rgba(27,26,117,1) 100%)
 }
 
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+
