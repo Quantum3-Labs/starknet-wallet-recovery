@@ -1,51 +1,84 @@
 "use client";
 
 import type { NextPage } from "next";
-import { useAccount, useBalance } from "@starknet-react/core";
+import { useAccount } from "@starknet-react/core";
 import {
   ArrowLeftIcon,
   DocumentDuplicateIcon,
 } from "@heroicons/react/24/outline";
 import { Token, tokens } from "~~/data/data";
 import { Button } from "@radix-ui/themes";
-import React, { FormEvent, FormEventHandler, useEffect, useState } from "react";
+import React, { useState } from "react";
 import GenericModal from "~~/components/scaffold-stark/CustomConnectButton/GenericModal";
-import { useLocalStorage } from "usehooks-ts";
 import TransactionForm from "~~/app/discover/_components /TransactionForm";
 import CustomCheckbox from "~~/app/discover/_components /CustomCheckbox";
 import StepIndicator from "~~/app/discover/_components /StepIndicator";
 import Image from "next/image";
 import {
   Address as AddressUI,
-  Balance,
-  BlockieAvatar,
+  AddressInput,
 } from "~~/components/scaffold-stark";
 import { Address } from "@starknet-react/chains";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import Link from "next/link";
-import { Form, Formik, useFormik } from "formik";
-import { ADDRESS } from "starknet";
+import { useFormik } from "formik";
 import { useScaffoldMultiWriteContract } from "~~/hooks/scaffold-stark/useScaffoldMultiWriteContract";
-import { useScaffoldWriteContract } from "~~/hooks/scaffold-stark/useScaffoldWriteContract";
+import { useScaffoldReadContract } from "~~/hooks/scaffold-stark/useScaffoldReadContract";
+import { formatEther } from "ethers";
 
 const Discover: NextPage = () => {
+  const [hackedAddress, setHackedAddressCore] = useState<string>("");
   const { address: accountAddress, status, chainId, ...props } = useAccount();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [inputValues, setInputValues] = useState(["Value 1", "Value 2"]);
   const [formType, setFormType] = useState("erc20");
   const [isERC20Selected, setIsERC20Selected] = useState(true);
   const [step, setStep] = useState(1);
   const [modalContent, setModalContent] = useState("addAssets");
   const [copied, setCopied] = useState(false);
-  const [ensAvatar, setEnsAvatar] = useState<string | null>();
   const [transactions, setTransactions] = useState<Token[]>([]);
+
+  const [selectedTokenBalance, setSelectedTokenBalance] = useState<
+    bigint | undefined
+  >();
+
+  const { data: balanceDai } = useScaffoldReadContract({
+    contractName: "DAI",
+    functionName: "balanceOf",
+    args: [accountAddress ?? ""],
+  });
+  const { data: balanceUST } = useScaffoldReadContract({
+    contractName: "USDT",
+    functionName: "balanceOf",
+    args: [accountAddress ?? ""],
+  });
+  const { data: balanceSTRK } = useScaffoldReadContract({
+    contractName: "STRK",
+    functionName: "balanceOf",
+    args: [accountAddress ?? ""],
+  });
+
+  const tokensBalance = {
+    STRK: balanceSTRK,
+    USDT: balanceUST,
+    DAI: balanceDai,
+  };
 
   const { writeAsync: tokensTransfer } = useScaffoldMultiWriteContract({
     calls: [
       {
-        contractName: "Eth",
+        contractName: "DAI",
         functionName: "transfer",
-        args: [accountAddress, 5 * 10 ** 17],
+        args: [hackedAddress, tokensBalance.DAI],
+      },
+      {
+        contractName: "USDT",
+        functionName: "transfer",
+        args: [hackedAddress, tokensBalance.USDT],
+      },
+      {
+        contractName: "STRK",
+        functionName: "transfer",
+        args: [hackedAddress, tokensBalance.STRK],
       },
     ],
   });
@@ -53,7 +86,13 @@ const Discover: NextPage = () => {
     const currentTransaction = tokens.filter(({ symbol }: Token) =>
       values.transactions.includes(symbol),
     );
+
     setTransactions(currentTransaction);
+    setSelectedTokenBalance(
+      currentTransaction.length
+        ? tokensBalance[currentTransaction[0].symbol]
+        : undefined,
+    );
     setStep(2);
   };
 
@@ -72,10 +111,6 @@ const Discover: NextPage = () => {
   const handleAdd = () => {
     setStep(2);
     setIsModalOpen(false);
-  };
-
-  const handleClearAll = () => {
-    setInputValues(["", ""]);
   };
 
   const handleStartSigning = () => {
@@ -98,6 +133,14 @@ const Discover: NextPage = () => {
   const handleBackClick = () => {
     setStep(1);
   };
+  const setHackedAddress = (hackedAddress: string) => {
+    setHackedAddressCore(hackedAddress);
+  };
+
+  const onClose = () => {
+    setIsModalOpen(false);
+    setStep(1);
+  };
 
   return (
     <>
@@ -109,7 +152,7 @@ const Discover: NextPage = () => {
               <div className="py-10 bg-[#E8E8F7] rounded-xl max-w-[473px] w-full flex flex-col justify-center items-center gap-4">
                 <span>Hacked address</span>
                 <div className="flex gap-3">
-                  <AddressUI address={accountAddress as ADDRESS} />
+                  <AddressUI address={accountAddress as Address} />
                 </div>
               </div>
             </div>
@@ -140,12 +183,16 @@ const Discover: NextPage = () => {
                                 </div>
                                 <div className="flex flex-col gap-2 justify-center">
                                   <span>{token.symbol}</span>
-                                  <Balance address={token.address as Address} />
+                                  <span>
+                                    {tokensBalance[token.symbol]
+                                      ? formatEther(tokensBalance[token.symbol])
+                                      : undefined}
+                                  </span>
                                 </div>
                               </div>
                             }
                             onChange={formik.handleChange}
-                            key={token.address}
+                            key={accountAddress}
                             value={token.symbol}
                             name="transactions"
                           />
@@ -177,6 +224,7 @@ const Discover: NextPage = () => {
 
               {step === 2 && (
                 <TransactionForm
+                  balance={selectedTokenBalance as bigint}
                   transactions={transactions}
                   address={accountAddress as string}
                   onStartSigning={handleStartSigning}
@@ -281,7 +329,7 @@ const Discover: NextPage = () => {
                 {modalContent === "signing" && (
                   <div className="flex flex-col gap-5 max-w-[700px] w-full ">
                     <div className="text-center my-4 text-black text-3xl">
-                      Connect to a wallet
+                      Insert the address
                     </div>
                     <div className="flex items-center justify-center flex-col gap-5">
                       <Image
@@ -291,19 +339,19 @@ const Discover: NextPage = () => {
                         height={251}
                       />
                       <span className="text-center">
-                        Fund your wallet with 0.001 ETH to execute the
-                        transaction and connect to your wallet.
+                        Insert the address where you want to send the tokens and
+                        fund your wallet with 0.001 ETH to execute the
+                        transaction.
                       </span>
                     </div>
 
                     <div className="w-full flex justify-center items-center flex-col pt-5 gap-5">
                       <div className="flex gap-2">
-                        <BlockieAvatar
-                          address={accountAddress as ADDRESS}
-                          ensImage={ensAvatar}
-                          size={24}
+                        <AddressInput
+                          placeholder="Insert the address"
+                          value={hackedAddress}
+                          onChange={setHackedAddress}
                         />
-                        <span>{accountAddress}</span>
                       </div>
 
                       <Button
@@ -333,9 +381,9 @@ const Discover: NextPage = () => {
                     </div>
                     <div className="w-full flex justify-center items-center gap-5 flex-col">
                       <div className="flex gap-2 bg-[#E8E8F7] p-4 rounded-md">
-                        <span>{accountAddress as ADDRESS}</span>
+                        <span>{hackedAddress as Address}</span>
                         <CopyToClipboard
-                          text={accountAddress as string}
+                          text={hackedAddress as string}
                           onCopy={handleCopy}
                         >
                           <DocumentDuplicateIcon
@@ -350,7 +398,7 @@ const Discover: NextPage = () => {
 
                       <Button
                         className="bg-button-secondary py-4 px-14 text-white rounded-full"
-                        onClick={() => setIsModalOpen(false)}
+                        onClick={onClose}
                       >
                         Close
                       </Button>
