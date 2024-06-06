@@ -4,9 +4,11 @@ import { Button } from "@radix-ui/themes";
 import { Token } from "~~/data/data";
 import { Balance } from "~~/components/scaffold-stark";
 import { Address } from "@starknet-react/chains";
+import { formatEther } from "ethers";
 
 interface TransactionFormProps {
   address: string;
+  balance: bigint;
   transactions: Token[];
   inputValues?: string;
   onStartSigning: () => void;
@@ -17,6 +19,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
   address,
   inputValues,
   onStartSigning,
+  balance,
   onBackClick,
   transactions,
 }) => {
@@ -51,14 +54,15 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
           </div>
 
           <div className="flex flex-col gap-3 justify-center w-full">
-            {currentTransactions.map(({ symbol, address }) => {
+            {currentTransactions.map(({ symbol }) => {
               return (
                 <div
                   className="bg-white rounded-md p-4 w-[880px] border-2 flex justify-between"
                   key={symbol}
                 >
                   <div>
-                    <Balance address={address as Address} /> {symbol}
+                    <span> {formatEther(balance)}</span>
+                    <div>{symbol}</div>
                   </div>
                   <button onClick={() => onRemove(symbol)}>x</button>
                 </div>
