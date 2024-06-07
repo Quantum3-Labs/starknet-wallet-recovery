@@ -2,7 +2,7 @@
 
 import type { NextPage } from "next";
 import Image from "next/image";
-import { Balance, BlockieAvatar } from "~~/components/scaffold-stark";
+import { BlockieAvatar } from "~~/components/scaffold-stark";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAccount } from "@starknet-react/core";
@@ -10,8 +10,6 @@ import { Address } from "@starknet-react/chains";
 import { getChecksumAddress } from "starknet";
 
 const Home: NextPage = () => {
-  const [ens, setEns] = useState<string | null>(null);
-  const [ensAvatar, setEnsAvatar] = useState<string | null>(null);
   const { address, status, chainId, ...props } = useAccount();
   const checkSumAddress = address ? getChecksumAddress(address) : undefined;
 

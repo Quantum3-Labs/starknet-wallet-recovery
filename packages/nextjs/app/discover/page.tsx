@@ -19,6 +19,7 @@ import { CopyToClipboard } from "react-copy-to-clipboard";
 import { useScaffoldReadContract } from "~~/hooks/scaffold-stark/useScaffoldReadContract";
 import { useScaffoldWriteContract } from "~~/hooks/scaffold-stark/useScaffoldWriteContract";
 import AssetSelectionForm from "~~/app/discover/_components /AssetSelectionForm";
+import { useScaffoldMultiWriteContract } from "~~/hooks/scaffold-stark/useScaffoldMultiWriteContract";
 
 const Discover: NextPage = () => {
   const [hackedAddress, setHackedAddressCore] = useState<string>("");
@@ -60,20 +61,35 @@ const Discover: NextPage = () => {
     DAI: balanceDai,
   };
 
-  const { writeAsync: transferDAI } = useScaffoldWriteContract({
-    contractName: "DAI",
-    functionName: "transfer",
-    args: [hackedAddress, tokensBalance.DAI],
-  });
-  const { writeAsync: transferUSDT } = useScaffoldWriteContract({
-    contractName: "USDT",
-    functionName: "transfer",
-    args: [hackedAddress, tokensBalance.USDT],
-  });
-  const { writeAsync: transferSTK } = useScaffoldWriteContract({
-    contractName: "STRK",
-    functionName: "transfer",
-    args: [hackedAddress, tokensBalance.STRK],
+  const filterContracts = (hackedAddress: Address) => {
+    const symbolsSelected = transactions.map(({ symbol }) => symbol);
+    const defaulcontracts = [
+      {
+        contractName: "DAI",
+        functionName: "transfer",
+        args: [hackedAddress, tokensBalance.DAI],
+        watch: true,
+      },
+      {
+        contractName: "USDT",
+        functionName: "transfer",
+        args: [hackedAddress, tokensBalance.USDT],
+        watch: true,
+      },
+      {
+        contractName: "STRK",
+        functionName: "transfer",
+        args: [hackedAddress, tokensBalance.STRK],
+        watch: true,
+      },
+    ];
+    return defaulcontracts.filter(({ contractName }) =>
+      symbolsSelected.includes(contractName),
+    );
+  };
+
+  const { writeAsync: tokensTransfers } = useScaffoldMultiWriteContract({
+    calls: filterContracts(hackedAddress as Address),
   });
 
   const handleCopy = () => {
@@ -95,22 +111,16 @@ const Discover: NextPage = () => {
     setModalContent("addAssets");
     setIsModalOpen(true);
   };
+
   const handleConfirm = async () => {
     setModalContent("empty");
     try {
-      if (tokensBalance.DAI) {
-        await transferDAI();
-      }
-      if (tokensBalance.USDT) {
-        await transferUSDT();
-      }
-      if (tokensBalance.STRK) {
-        await transferSTK();
-      }
+      await tokensTransfers();
     } catch (error) {
       console.error("Error transferring tokens:", error);
     }
   };
+
   const handleBackClick = () => {
     setStep(1);
   };
