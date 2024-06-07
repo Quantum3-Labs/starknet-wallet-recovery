@@ -36,6 +36,8 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     setCurrentTransactions([]);
   };
 
+  console.log({ transactions });
+
   return (
     <div className="flex flex-col gap-5 justify-center items-center">
       <div className="flex justify-center items-center w-full gap-5 text-3xl">
@@ -49,19 +51,19 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       <div className="flex flex-col gap-60 w-full items-center">
         <div className="flex flex-col gap-4">
           <div className="flex gap-2">
-            <span>These tokens will send to </span>
+            <span>These tokens will send from </span>
             <span className="text-[#8C16E9]">{address}</span>
           </div>
 
           <div className="flex flex-col gap-3 justify-center w-full">
-            {currentTransactions.map(({ symbol }) => {
+            {currentTransactions.map(({ symbol, balance }) => {
               return (
                 <div
                   className="bg-white rounded-md p-4 w-[880px] border-2 flex justify-between"
                   key={symbol}
                 >
                   <div>
-                    <span> {formatEther(balance)}</span>
+                    <span> {balance ? formatEther(balance) : undefined}</span>
                     <div>{symbol}</div>
                   </div>
                   <button onClick={() => onRemove(symbol)}>x</button>

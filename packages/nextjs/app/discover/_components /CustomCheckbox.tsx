@@ -5,6 +5,7 @@ interface CustomCheckboxProps {
   onChange?: (event: ChangeEvent<HTMLInputElement>) => void;
   name: string;
   label: ReactNode;
+  isChecked: boolean;
 }
 
 const CustomCheckbox: React.FC<CustomCheckboxProps> = ({
@@ -12,6 +13,7 @@ const CustomCheckbox: React.FC<CustomCheckboxProps> = ({
   onChange,
   name,
   label,
+  isChecked,
 }) => {
   return (
     <label
@@ -27,6 +29,7 @@ const CustomCheckbox: React.FC<CustomCheckboxProps> = ({
           className="form-checkbox h-6 w-6 text-blue-500"
           name={name}
           value={value}
+          checked={isChecked}
         />
       </div>
     </label>
