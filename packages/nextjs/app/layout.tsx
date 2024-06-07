@@ -4,7 +4,7 @@ import "~~/styles/globals.css";
 import { ThemeProvider } from "~~/components/ThemeProvider";
 
 export const metadata: Metadata = {
-  title: "Starknet Speedrun",
+  title: "Wallet Recovery",
   description: "Fast track your starknet journey",
 };
 
