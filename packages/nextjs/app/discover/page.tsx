@@ -2,16 +2,12 @@
 
 import type { NextPage } from "next";
 import { useAccount } from "@starknet-react/core";
-import {
-  ArrowLeftIcon,
-  DocumentDuplicateIcon,
-} from "@heroicons/react/24/outline";
+import { DocumentDuplicateIcon } from "@heroicons/react/24/outline";
 import { Token, tokens } from "~~/data/data";
 import { Button } from "@radix-ui/themes";
 import React, { useState } from "react";
 import GenericModal from "~~/components/scaffold-stark/CustomConnectButton/GenericModal";
 import TransactionForm from "~~/app/discover/_components /TransactionForm";
-import CustomCheckbox from "~~/app/discover/_components /CustomCheckbox";
 import StepIndicator from "~~/app/discover/_components /StepIndicator";
 import Image from "next/image";
 import {
@@ -20,11 +16,9 @@ import {
 } from "~~/components/scaffold-stark";
 import { Address } from "@starknet-react/chains";
 import { CopyToClipboard } from "react-copy-to-clipboard";
-import Link from "next/link";
-import { useFormik } from "formik";
-import { useScaffoldMultiWriteContract } from "~~/hooks/scaffold-stark/useScaffoldMultiWriteContract";
 import { useScaffoldReadContract } from "~~/hooks/scaffold-stark/useScaffoldReadContract";
-import { formatEther } from "ethers";
+import { useScaffoldWriteContract } from "~~/hooks/scaffold-stark/useScaffoldWriteContract";
+import AssetSelectionForm from "~~/app/discover/_components /AssetSelectionForm";
 
 const Discover: NextPage = () => {
   const [hackedAddress, setHackedAddressCore] = useState<string>("");
@@ -45,16 +39,19 @@ const Discover: NextPage = () => {
     contractName: "DAI",
     functionName: "balanceOf",
     args: [accountAddress ?? ""],
+    watch: true,
   });
   const { data: balanceUST } = useScaffoldReadContract({
     contractName: "USDT",
     functionName: "balanceOf",
     args: [accountAddress ?? ""],
+    watch: true,
   });
   const { data: balanceSTRK } = useScaffoldReadContract({
     contractName: "STRK",
     functionName: "balanceOf",
     args: [accountAddress ?? ""],
+    watch: true,
   });
 
   const tokensBalance = {
@@ -63,44 +60,20 @@ const Discover: NextPage = () => {
     DAI: balanceDai,
   };
 
-  const { writeAsync: tokensTransfer } = useScaffoldMultiWriteContract({
-    calls: [
-      {
-        contractName: "DAI",
-        functionName: "transfer",
-        args: [hackedAddress, tokensBalance.DAI],
-      },
-      {
-        contractName: "USDT",
-        functionName: "transfer",
-        args: [hackedAddress, tokensBalance.USDT],
-      },
-      {
-        contractName: "STRK",
-        functionName: "transfer",
-        args: [hackedAddress, tokensBalance.STRK],
-      },
-    ],
+  const { writeAsync: transferDAI } = useScaffoldWriteContract({
+    contractName: "DAI",
+    functionName: "transfer",
+    args: [hackedAddress, tokensBalance.DAI],
   });
-  const onSubmit = (values: any) => {
-    const currentTransaction = tokens.filter(({ symbol }: Token) =>
-      values.transactions.includes(symbol),
-    );
-
-    setTransactions(currentTransaction);
-    setSelectedTokenBalance(
-      currentTransaction.length
-        ? tokensBalance[currentTransaction[0].symbol]
-        : undefined,
-    );
-    setStep(2);
-  };
-
-  const formik = useFormik({
-    initialValues: {
-      transactions: [],
-    },
-    onSubmit,
+  const { writeAsync: transferUSDT } = useScaffoldWriteContract({
+    contractName: "USDT",
+    functionName: "transfer",
+    args: [hackedAddress, tokensBalance.USDT],
+  });
+  const { writeAsync: transferSTK } = useScaffoldWriteContract({
+    contractName: "STRK",
+    functionName: "transfer",
+    args: [hackedAddress, tokensBalance.STRK],
   });
 
   const handleCopy = () => {
@@ -125,7 +98,15 @@ const Discover: NextPage = () => {
   const handleConfirm = async () => {
     setModalContent("empty");
     try {
-      await tokensTransfer();
+      if (tokensBalance.DAI) {
+        await transferDAI();
+      }
+      if (tokensBalance.USDT) {
+        await transferUSDT();
+      }
+      if (tokensBalance.STRK) {
+        await transferSTK();
+      }
     } catch (error) {
       console.error("Error transferring tokens:", error);
     }
@@ -158,68 +139,22 @@ const Discover: NextPage = () => {
             </div>
             <div className="flex-1 px-10 flex gap-10 flex-col justify-center">
               {step === 1 && (
-                <form onSubmit={formik.handleSubmit}>
-                  <>
-                    <div className="flex justify-center items-center gap-5 text-3xl w-full">
-                      <div className="flex max-w-[880px] w-full justify-start gap-3">
-                        <Link href={"/"}>
-                          <ArrowLeftIcon className="w-8" />
-                        </Link>
-                        <span>Select your assets</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-10 w-full justify-center items-center">
-                      {tokens.map((token) => {
-                        return (
-                          <CustomCheckbox
-                            label={
-                              <div className="flex items-start justify-start gap-4">
-                                <div className="flex items-center gap-1">
-                                  <img
-                                    src={token.logo}
-                                    alt={token.symbol}
-                                    className="w-8 h-8 rounded-full"
-                                  />
-                                </div>
-                                <div className="flex flex-col gap-2 justify-center">
-                                  <span>{token.symbol}</span>
-                                  <span>
-                                    {tokensBalance[token.symbol]
-                                      ? formatEther(tokensBalance[token.symbol])
-                                      : undefined}
-                                  </span>
-                                </div>
-                              </div>
-                            }
-                            onChange={formik.handleChange}
-                            key={accountAddress}
-                            value={token.symbol}
-                            name="transactions"
-                          />
-                        );
-                      })}
-                    </div>
-                    <div className="flex items-center justify-center gap-10 py-10">
-                      <Button
-                        className="py-4 px-14 rounded-full border-black border-2"
-                        onClick={handleAddManuallyClick}
-                      >
-                        Add Manually
-                      </Button>
-                      <Button
-                        className={`bg-button-secondary py-4 px-20 text-white rounded-full ${
-                          formik.values.transactions.length
-                            ? ""
-                            : "pointer-events-none opacity-50"
-                        }`}
-                        disabled={!formik.values.transactions.length}
-                        type="submit"
-                      >
-                        Continue
-                      </Button>
-                    </div>
-                  </>
-                </form>
+                <AssetSelectionForm
+                  tokens={tokens}
+                  tokensBalance={tokensBalance}
+                  accountAddress={accountAddress as Address}
+                  onContinue={(transactions) => {
+                    const lastTransactions = transactions.map((transaction) => {
+                      const { symbol } = transaction;
+                      // @ts-ignore
+                      return { balance: tokensBalance[symbol], ...transaction };
+                    });
+                    console.log(lastTransactions);
+                    setTransactions(lastTransactions);
+                    setStep(2);
+                  }}
+                  handleAddManuallyClick={handleAddManuallyClick}
+                />
               )}
 
               {step === 2 && (
